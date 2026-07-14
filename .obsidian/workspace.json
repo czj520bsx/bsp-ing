@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Linux基础知识/uboot.md",
+                "file": "BSP基础知识/uboot.md",
                 "mode": "source",
                 "source": false
               },
@@ -183,12 +183,13 @@
       "bases:新建数据库": false
     }
   },
-  "active": "5d80b321239c8dbc",
+  "active": "56ffb94caf02b067",
   "lastOpenFiles": [
+    "未命名.md",
+    "BSP基础知识/uboot.md",
     "TODO.md",
-    "Linux基础知识/uboot.md",
     "Linux基础知识/uboot源码解析.canvas",
     "TODO.canvas",
-    "Linux基础知识"
+    "BSP基础知识"
   ]
 }
