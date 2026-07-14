@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
     "id": "d7703a0cc32701e1",
@@ -183,11 +183,11 @@
       "bases:新建数据库": false
     }
   },
-  "active": "56ffb94caf02b067",
+  "active": "5d80b321239c8dbc",
   "lastOpenFiles": [
-    "未命名.md",
-    "BSP基础知识/uboot.md",
     "TODO.md",
+    "BSP基础知识/uboot.md",
+    "未命名.md",
     "Linux基础知识/uboot源码解析.canvas",
     "TODO.canvas",
     "BSP基础知识"

@@ -191,3 +191,56 @@ boot_selected_os(..., OS_GO, boot_fn) // bootm_os.c
 ```
 
 ## 正点原子IMX6ULL
+ ### **通用start.s之前的前导链**
+BootROM芯片厂商出厂的固化程序，按DSD表去写寄存器，配置时钟，DDR等，类比rk3562-evm的MaskROM的DDR训练。
+### 通用bootcmd后的linux内核引导
+```
+board_init_r
+  → run_main_loop
+      → main_loop()                          【common/main.c】
+          → bootdelay_process()              【common/autoboot.c】取出 bootcmd
+          → autoboot_command(bootcmd)        【common/autoboot.c】
+              → run_command_list(bootcmd)    【common/cli.c】
+                  │  bootcmd = CONFIG_BOOTCOMMAND【include/configs/mx6ullevk.h】
+                  ├─ run findfdt             定 fdt_file 名字
+                  ├─ mmc dev / mmc rescan    【cmd/mmc.c】
+                  ├─ run loadimage           【mx6ullevk.h】
+                  │     └─ fatload mmc ... zImage
+                  │           → zImage 进内存 loadaddr
+                  │           【cmd/fat.c → fs/fs.c】
+                  │
+                  └─ run mmcboot             【mx6ullevk.h】
+                        ├─ run mmcargs
+                        │     └─ setenv bootargs（串口 / root=...）
+                        ├─ run loadfdt
+                        │     └─ fatload mmc ... dtb
+                        │           → dtb 进内存 fdt_addr
+                        │           【cmd/fat.c → fs/fs.c】
+                        └─ bootz ${loadaddr} - ${fdt_addr}
+                              → do_bootz()       【cmd/bootm.c】，类似rk3562的挂内核
+                                    ├─ bootz_start()
+                                    │     └─ 认 zImage，记下内核 / dtb 地址
+                                    └─ do_bootm_states(OS_PREP | OS_GO)
+                                          → do_bootm_linux()   【bootm.c】
+                                                ├─ boot_prep_linux()
+                                                │     └─ 准备 bootargs / dtb
+                                                └─ boot_jump_linux()
+                                                      └─ kernel_entry()
+```
+bootcmd的执行表`mx6ullevk.h`
+```
+#define CONFIG_BOOTCOMMAND \
+       "run findfdt;" \
+       "mmc dev ${mmcdev};" \
+       "mmc dev ${mmcdev}; if mmc rescan; then " \
+           "if run loadbootscript; then " \
+               "run bootscript; " \
+           "else " \
+               "if run loadimage; then " \ /*加载内核zlmage*/
+                   "run mmcboot; " \   /*加载设备树*/
+               "else run netboot; " \
+               "fi; " \
+           "fi; " \
+       "else run netboot; fi"
+#endif
+```
