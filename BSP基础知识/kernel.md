@@ -121,3 +121,113 @@ static void __init do_initcall_level(int level, char *command_line)
 
 }
 ```
+**拓展：怎么和DTS接上的**
+###### 首先level级别分类：
+early → pure(0) → core(1) → postcore(2) → arch(3）→ subsys(4) → fs(5) → device(6) → late(7)。
+分两步在<mark style="background: #BBFABBA6;">do_initcalls</mark>接上：
+```
+启动早期（setup_arch）
+  .dtb ──unflatten──► device_node 树
+                      （只是数据，没人去操作硬件）
+do_initcalls ① arch 级
+  遍历 node（status!=disabled）
+  ──populate──► platform_device 挂到 platform 总线
+                 （还在「等人认领」，没 probe）-
+do_initcalls ② device 级
+  foo_init → platform_driver_register
+  总线比对 compatible
+  命中 → foo_driver.probe(dev)
+  （这时才 ioremap / 申请中断 / 注册 /dev/...）
+```
+① 负责「造出设备对象」；② 负责「谁来操作这类硬件」。  
+顺序靠 initcall 级别保证（populate 在 arch，多数驱动在 device）。
+###### `compatible` 就是匹配钥匙
+一边在 DTS：
+```
+compatible = "rockchip,rk3568-dw-mshc";
+status = "okay";
+```
+一边在驱动：
+```
+static const struct of_device_id foo_of_match[] = {
+    { .compatible = "rockchip,rk3568-dw-mshc" },
+    { /* sentinel */ }
+};
+static struct platform_driver foo_driver = {
+    .probe = foo_probe,
+    .driver = {
+        .of_match_table = foo_of_match,
+    },
+};
+```
+#### 阶段四：挂载 rootfs
+##### prepare_namespace
+```
+void __init prepare_namespace(void)
+{
+    if (root_delay)
+        ssleep(root_delay);
+    wait_for_device_probe();          // 等 eMMC 等设备 probe
+    if (saved_root_name[0]) {
+        ROOT_DEV = name_to_dev_t(saved_root_name);  // 解析 root=
+       ...
+    }
+    if (initrd_load())
+        goto out;
+    if ((ROOT_DEV == 0) && root_wait) {  // rootwait
+        while (... name_to_dev_t(saved_root_name) == 0)
+            msleep(5);
+    }
+    mount_root();
+out:
+    devtmpfs_mount();
+    init_mount(".", "/", NULL, MS_MOVE, NULL);
+    init_chroot(".");
+}
+```
+#####  root= 参数
+```
+__setup("root=", root_dev_setup);   // → saved_root_name
+```
+##### mount_root
+```
+void __init mount_root(void)
+{
+    create_dev("/dev/root", ROOT_DEV);
+    mount_block_root("/dev/root", root_mountflags);  // 通常 ext4
+}
+```
+#### 常见挂载失败
+1. `VFS: Cannot open root device`：UUID 错、分区名错；
+2. `Waiting for root device`：缺 `rootwait`，或 eMMC 驱动未起；
+3. `Kernel panic - not syncing: VFS`：镜像坏 / `rootfstype` 不匹配。
+####  阶段五：启动 init 进程
+##### 启动顺序概况
+```
+static int __ref kernel_init(void *unused)
+{
+    kernel_init_freeable();
+    free_initmem();
+    system_state = SYSTEM_RUNNING;
+    if (ramdisk_execute_command)
+        run_init_process(ramdisk_execute_command);
+    if (execute_command)                 // init= 内核参数
+        run_init_process(execute_command);
+    if (CONFIG_DEFAULT_INIT[0])
+        run_init_process(CONFIG_DEFAULT_INIT);
+    try_to_run_init_process("/sbin/init");   // ★ Buildroot 默认
+    try_to_run_init_process("/etc/init");
+    try_to_run_init_process("/bin/init");
+    try_to_run_init_process("/bin/sh");
+    panic("No working init found...");
+}
+```
+##### run_init_process
+```
+static int run_init_process(const char *init_filename)
+{
+    pr_info("Run %s as init process\n", init_filename);
+    return kernel_execve(init_filename, argv_init, envp_init);
+}
+```
+串口可以看到：Run /sbin/init as init process。此后进入buildroot。
