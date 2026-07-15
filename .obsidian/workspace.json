@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BSP基础知识/uboot.md",
+                "file": "BSP基础知识/kernel.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "uboot"
+              "title": "kernel"
             }
           }
         ]
@@ -185,8 +185,10 @@
   },
   "active": "5d80b321239c8dbc",
   "lastOpenFiles": [
-    "TODO.md",
+    "linux内核启动源码阅读指南.md",
     "BSP基础知识/uboot.md",
+    "BSP基础知识/kernel.md",
+    "TODO.md",
     "未命名.md",
     "Linux基础知识/uboot源码解析.canvas",
     "TODO.canvas",
