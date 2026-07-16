@@ -1,3 +1,3 @@
-- [√] uboot源码及启动流程
-- [ ] linux内核及启动流程
+- [x] uboot源码及启动流程
+- [x] linux内核及启动流程
 - [ ] rootfs

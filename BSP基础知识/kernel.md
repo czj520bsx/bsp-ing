@@ -55,8 +55,8 @@ asmlinkage __visible void __init start_kernel(void)
 3. 展开设备树 — 以后驱动才能按节点找硬件；
 4. 摸清 CPU/电源 — 几个核、怎么通过 PSCI/ATF 管它们。
 
-#### 阶段三：rest_init 与 kernel_init
-##### rest_init — 启动模型的「分水岭」
+##### rest_init 与 kernel_init
+###### rest_init — 启动模型的「分水岭」
 ```
 noinline void __ref rest_init(void)
 {
@@ -68,7 +68,7 @@ noinline void __ref rest_init(void)
 }
 ```
 start_kernel结束，同时创建kernel_init,kthreadd线程，start_kernel变空闲，kernel_init挂文件系统等。后续真正的继续启动再<mark style="background: #BBFABBA6;">kernel_init</mark>完成
-##### kernel_init → kernel_init_freeable
+###### kernel_init → kernel_init_freeable
 ```
 static int __ref kernel_init(void *unused)
 {
@@ -160,7 +160,7 @@ static struct platform_driver foo_driver = {
     },
 };
 ```
-#### 阶段四：挂载 rootfs
+#### 阶段三：挂载 rootfs
 ##### prepare_namespace
 ```
 void __init prepare_namespace(void)
@@ -201,7 +201,7 @@ void __init mount_root(void)
 1. `VFS: Cannot open root device`：UUID 错、分区名错；
 2. `Waiting for root device`：缺 `rootwait`，或 eMMC 驱动未起；
 3. `Kernel panic - not syncing: VFS`：镜像坏 / `rootfstype` 不匹配。
-####  阶段五：启动 init 进程
+####  阶段四：启动 init 进程
 ##### 启动顺序概况
 ```
 static int __ref kernel_init(void *unused)
