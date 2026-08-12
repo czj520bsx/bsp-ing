@@ -13,15 +13,44 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "BSP基础知识/rootfs.md",
+                "file": "国网多芯系统SMIOS（RK3562J）/Linux框架/Media摄像头.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "rootfs"
+              "title": "Media摄像头"
+            }
+          },
+          {
+            "id": "37d561afa39c33ae",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架移植.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "drm框架移植"
+            }
+          },
+          {
+            "id": "7e1aaf7553047edf",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架移植.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "ALSA框架移植"
             }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -40,8 +69,10 @@
             "state": {
               "type": "file-explorer",
               "state": {
-                "sortOrder": "alphabetical",
-                "autoReveal": false
+                "sortOrder": "byCreatedTimeReverse",
+                "autoReveal": true,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
               "title": "文件列表"
@@ -183,12 +214,22 @@
       "bases:新建数据库": false
     }
   },
-  "active": "5d80b321239c8dbc",
+  "active": "7e1aaf7553047edf",
   "lastOpenFiles": [
-    "BSP基础知识/uboot.md",
-    "BSP基础知识/rootfs.md",
-    "BSP基础知识/kernel.md",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架详解.md",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架移植.md",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架详解.md",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架移植.md",
+    "国网多芯系统SMIOS（RK3562J）/杂项测试.md",
+    "国网多芯系统SMIOS（RK3562J）/调试日志/OOPS和PANIC排查.md",
     "TODO.md",
+    "国网多芯系统SMIOS（RK3562J）/调试日志",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架/Media摄像头.md",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架",
+    "BSP基础知识/移植与写驱动.md",
+    "BSP基础知识/rootfs.md",
+    "BSP基础知识/uboot.md",
+    "BSP基础知识/kernel.md",
     "linux内核启动源码阅读指南.md",
     "Linux基础知识/uboot源码解析.canvas",
     "TODO.canvas",
