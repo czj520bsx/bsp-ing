@@ -1,20 +1,18 @@
 # OOT 挂 ko 故障案例集（真实串口日志）
 
-来源：RK3562 多核板 **DRM / ALSA** 外挂移植（现网 `5.10.198 #236`，`# CONFIG_DRM is not set` / `# CONFIG_SOUND is not set`，SDK 驱动源码偏 5.10.226）。  
-日志均为当时板上原样或与当时一致的关键打印。
+来源：RK3562 多核板 **DRM / ALSA / 摄像头(GC05A2+rkaiq)** 外挂移植（现网 `5.10.198 #236`：`# CONFIG_DRM` / `SOUND` / `MEDIA_SUPPORT` is not set；SDK 驱动源码偏 5.10.226）。  
+日志均为当时板上原样或与当时一致的关键打印。摄像头案例如无完整 Oops 栈，亦保留 **dmesg/工具输出中的关键行**。
 
 **读日志口诀**：日志几乎从不写 `ABI mismatch`；它只告诉你 **缺符号 / 在哪崩 / 谁在加载**。ABI 是事后根据栈与编译环境推出来的。
 
 ---
-# abi对齐
-内核模块和正在跑的那颗内核之间的“二进制约定”——结构体怎么排、函数符号叫什么、`vermagic` 长什么样。对不上就 `insmod` 失败或一跑就 oops。
 
 ## 通用排查步骤
 
 1. **串口常开**，`insmod` 一个一个来（或脚本里看最后一个 `(O+)`）。
-2. 重启前整段复制，搜：`Unknown symbol` / `Invalid module format` / `Oops` / `Unable to handle` / `Call trace` / `pc :` / `lr :`。
-3. 看 `Comm:`（常是 `insmod` / `modetest` / `amixer` / `aplay`）和 `Modules linked in: xxx(O+)`（加载中的模块）。
-4. 对照修复：缺符号 → 补依赖 ko / 关特性；Oops → 对齐 ABI 头、加固错误路径、绕开现核没有的子系统；有设备无声/无卡 → 查 DT / MFD / mixer 通路 / 用户态 alsa。
+2. 重启前整段复制，搜：`Unknown symbol` / `Invalid module format` / `Oops` / `Unable to handle` / `Call trace` / `pc :` / `lr :`；相机另搜 `cma_alloc` / `stack-protector` / `REQBUFS`。
+3. 看 `Comm:`（常是 `insmod` / `modetest` / `amixer` / `aplay` / `v4l2_grab` / `rkaiq_3A_server`）和 `Modules linked in: xxx(O+)`。
+4. 对照修复：缺符号 → 补依赖 ko / 关特性；Oops → 对齐 ABI 头、加固错误路径、绕开现核没有的子系统；有设备无声/无卡 → 查 DT / MFD / mixer；相机无图/二次抓失败 → CMA / 3A 握手 / IOMMU。
 
 ---
 
@@ -468,6 +466,182 @@ FATAL: modpost: .../snd: 'xxx' exported twice. Previous export was in vmlinux
 
 ---
 
+## 案例 15：`stack_canary` 偏移错误 → 假 stack-protector（摄像头）
+
+### 打印
+
+```text
+# 现象：v4l2_event_dequeue / DQEVENT 一睡眠就 panic（假栈破坏）
+# 或 objdump 可见模块里大量：
+ldr     xN, [xM, #1208]     # 错：本地 kernel tree 的 TSK_STACK_CANARY
+# Image #236 实际是：
+# task_struct.stack_canary @ 1192
+```
+
+### 排查
+
+| 线索 | 含义 |
+|------|------|
+| 本地 `asm-offsets.h` 常为 `1208` | 用 SDK tree `.config` 算出的布局 |
+| 现网 `#236` headers 为 `1192` | 与板子 `task_struct` 一致 |
+| 错 offset 的模块一旦 `schedule()` | 读错 canary → 假 “stack corruption” |
+
+### 修复
+
+- `build_cam_kos.sh`：编前把 `include/generated/asm-offsets.h` 的 `TSK_STACK_CANARY` 打成 **1192**。  
+- 校验：`videodev.ko` / `video_rkcif.ko` / `video_rkisp.ko` / phy 等 objdump 应为 `#1192`，不应再有 `#1208`。  
+- 参考：`kx/smios-sdk-v2.0/usr/src/linux-headers-5.10.198/include/generated/asm-offsets.h`。
+
+---
+
+## 案例 16：media 缺导出 → `Unknown symbol cma_alloc` / `frame_vector_*` / `rockchip_iommu_*`
+
+### 打印
+
+```text
+videobuf2_cma_sg: Unknown symbol cma_alloc (err -2)
+videobuf2_cma_sg: Unknown symbol cma_release (err -2)
+# 或
+Unknown symbol get_vaddr_frames / frame_vector_create / rockchip_iommu_enable ...
+```
+
+### 排查
+
+- 现核 `CONFIG_MEDIA_SUPPORT` 未开，整套 V4L2/vb2 都是 OOT。  
+- Image 里 **有** DMA-CMA（约 32MB），但 **`cma_alloc` 未导出给模块**；vb2-cma-sg 却硬依赖它。  
+- `frame_vector` / 部分 `rockchip_iommu_*` 同样可能未导出。
+
+### 修复
+
+- 先装 **`media_deps.ko`**（`cam/media-deps/`）：  
+  - `cma_shim.c`：导出 `cma_alloc`/`cma_release`，内部走 **`dma_alloc_from_contiguous()`**（真 CMA）  
+  - `frame_vector.c`：补 frame_vector API  
+  - `iommu_shim.c` /（按需）`sysstatus_shim.c`：空实现导出  
+- `insmod.sh`：**`media_deps` 必须最先**。
+
+---
+
+## 案例 17：假 CMA → 第二次 `grab_3a` `REQBUFS` 失败（无 NV12）
+
+### 打印
+
+```text
+media_deps cma_alloc: fail count=1853 order=11
+# 或早期假池：
+media_deps cma pool: 0 x 16MiB + 0 x 8MiB
+# 用户态：
+VIDIOC_REQBUFS failed ...
+# 第一次 grab 可能成功，第二次写不出文件
+```
+
+### 排查
+
+| 线索 | 含义 |
+|------|------|
+| `count=1853` | 2592×1944 NV12 ≈ **8MiB**（1853 pages） |
+| `#236` `MAX_ORDER=11` | buddy 单次最大 **4MiB**（order < 11） |
+| 假实现：`alloc_pages`+`split_page` | 第一次抠走 8MiB 后，碎片化再也拼不回 |
+
+### 修复
+
+- **不要** 用 buddy 假扮 CMA。  
+- `cma_shim`：优先 `dma_alloc_from_contiguous()`；不够再 `alloc_contig_range`。  
+- `grab_3a.sh` 默认 **`-b 2`**（少占连续内存）。  
+- 成功标志：`media_deps cma_alloc: dma-cma count=1853`。
+
+---
+
+## 案例 18：第二次抓拍 Oops（3A / params STREAMOFF 顺序与 IQ CMA）
+
+### 打印
+
+```text
+# 典型：第二次 grab_3a 或 STREAMOFF 路径
+Unable to handle kernel paging request at virtual address ...
+# Comm: v4l2_grab / rkaiq_3A_server
+# 或 params/stats 缓冲已释放后 3A 仍持有 dma_fd mmap → UAF
+```
+
+### 排查
+
+- OOT vb2/CMA **不会像内置 media 那样长期钉住** IQ 页。  
+- SDK 默认 STREAMOFF 顺序若先 `params_stream_stop` 再通知 3A，OOT 上易在 3A 仍映射时拆缓冲。  
+- 无 IOMMU 时若仍写 BAY3D/LDCH 等 DDR 模块，还会砸内存。
+
+### 修复（`kx/移植/cam/video_rkisp/` 副本）
+
+1. `hw.c`：无 IOMMU domain → `is_mmu=0`。  
+2. `isp_params_v32.c`：`rkisp_oot_skip_iq_ddr()` 跳过 BAY3D/LDCH/CAC/3DLUT；params 仍 open 时 **keep IQ CMA**。  
+3. `isp_stats_v32.c`：无 MMU 不使能 `3A_DDR_WRITE`。  
+4. `rkisp.c`：STREAMOFF **先 `rkisp_stop_3a_run`，再 `rkisp_params_stream_stop`**。  
+5. `capture_v32.c` / `common.h`：`rkisp_v32_stream_irq_ok` / `rkisp_vb2_buf_ok` 防 poison ISR。
+
+成功 dmesg 片段：
+
+```text
+OOT isp is_mmu=0 contig=1 reserved=0
+OOT no IOMMU: skip BAY3D/LDCH/CAC/3A-DDR, 3A AE/AWB on
+Waiting for 3A on/off … ms
+keep IQ/3DNR/stats CMA (params still open)
+```
+
+---
+
+## 案例 19：sensor 电 / `cam_mclk` 与自管电冲突
+
+### 打印
+
+```text
+# probe 失败、无 0x37 UU、无图
+Failed to get xvclk ...
+# 或同时启用 cam_mclk + sensor clocks 时行为不定
+```
+
+### 排查
+
+- 方案冲突：要么 **cam_mclk.ko** 管 MCLK/reset/pwdn，要么 **gc05a2 自管**（DT 写 `clocks=xvclk` + gpio）。  
+- 本仓可用路径：**sensor 自管**；`insmod.sh` 会尝试 `rmmod cam_mclk`。
+
+### 修复
+
+- DTB 用方案1（sensor 拥有 xvclk/reset/pwdn）；不要与 `cam_mclk0` 同时 okay。  
+- OOT `gc05a2.c`：去掉未导出的 `mutex_destroy` 等。  
+- `i2cdetect -y 5` 见 `0x37` 为 `UU`。
+
+---
+
+## 案例 20：用户态 / 流程误用（非内核 Oops，但「不出彩图」）
+
+### 打印
+
+```text
+# rkaiq 刷屏（可忽略）
+Bad media topology media2
+Bad media topology media3
+...
+# CIF 侧偶发
+Failed to open /dev/video1
+# 若误跑旧 grab.sh：会杀 3A / 重搭 link → 灰图或断流
+```
+
+### 排查
+
+| 现象 | 含义 |
+|------|------|
+| `Bad media topology media2–15` | rkaiq 扫多余 media 节点，**可忽略** |
+| CIF `video1` open fail | 非主路径，**可忽略** |
+| 有 NV12 但 uv 全 0 / 灰图 | 3A 未跑或被杀掉；IQ 路径不对 |
+| glibc 版本不够 | SMIOS 系统 linker 跑不动 Buildroot 编的 rkaiq |
+
+### 修复
+
+- 只用：`insmod.sh` → `start_3a.sh` → `grab_3a.sh`（**不要** 3A 起来后再跑旧 `grab.sh`）。  
+- IQ：`/tmp/iqfiles/`；`rkaiq_3A_server` 默认 2592×1944。  
+- `start_3a.sh`：私有 `ld-linux` + RT 配额。  
+- 校验彩图：`Ymean`/`UVmean` 正常，`uv0%` 不要接近 100。
+
+---
+
 ## 案例对照速查
 
 | 现象 | 类型 | 优先动作 |
@@ -485,6 +659,13 @@ FATAL: modpost: .../snd: 'xxx' exported twice. Previous export was in vmlinux
 | `Invalid CTL hw:0` | 用户态缺 alsa.conf | `tools/run.sh` + `ALSA_CONFIG_PATH` |
 | 播完无声 | 通路/功放 | `Playback Path=SPK_HP` |
 | modpost `exported twice` | 假 vmlinux 符号 | 剥 `Module.symvers` |
+| DQEVENT / 假 stack-protector | canary 1208 vs 1192 | `build_cam_kos.sh` 强制 1192 |
+| `Unknown symbol cma_alloc` 等 | media 未导出 | 先装 `media_deps.ko` |
+| `cma_alloc: fail … order=11` / 二次 grab 无文件 | 假 CMA / 碎片 | 真 DMA-CMA + `-b 2` |
+| 二次 grab Oops / params UAF | 3A 与 STREAMOFF | 先 stop_3a；keep IQ；skip IQ DDR |
+| sensor 无 UU / 无 xvclk | 电与时钟方案冲突 | sensor 自管；卸 `cam_mclk` |
+| `Bad media topology` / CIF video1 | 噪声日志 | 可忽略 |
+| NV12 灰图 / uv0%≈100 | 3A/IQ/流程 | `start_3a`+`grab_3a`；查 IQ |
 | 只有半截日志就重启 | 可能 panic/看门狗 | 仍按最后一个 `(O+)` / `Comm:` 缩小范围 |
 
 ---
@@ -497,3 +678,5 @@ FATAL: modpost: .../snd: 'xxx' exported twice. Previous export was in vmlinux
 排查时：**先当 Oops 读 `pc`/`lr`/`(O+)`/`Comm:`，再谈修 ABI 或错误路径**——这就是当时你贴日志、我们改 ABI/补丁的真实过程。
 
 音频侧补充：很多「没声」**不是 Oops**（案例 8/9/12/13）；先确认有没有 card、有没有 bridge、Path 对不对，再和 `put_pid` 类崩溃分开处理。
+
+摄像头侧补充：很多「第二次没图」先是 **CMA/`REQBUFS`**（案例 17），不一定是 Oops；二次才崩再按案例 18 查 3A/STREAMOFF。完整流程见 [`cam/README.md`](./cam/README.md)、[`OOT-PORTING-GUIDE.md`](./OOT-PORTING-GUIDE.md)。

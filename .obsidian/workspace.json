@@ -41,12 +41,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架移植.md",
+                "file": "国网多芯系统SMIOS（RK3562J）/移植多媒体总览.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "ALSA框架移植"
+              "title": "移植多媒体总览"
             }
           }
         ],
@@ -216,12 +216,15 @@
   },
   "active": "7e1aaf7553047edf",
   "lastOpenFiles": [
-    "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架详解.md",
     "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架移植.md",
+    "国网多芯系统SMIOS（RK3562J）/移植多媒体总览.md",
+    "国网多芯系统SMIOS（RK3562J）/OOT-PORTING-GUIDE.md",
+    "国网多芯系统SMIOS（RK3562J）/调试日志/OOPS和PANIC排查.md",
+    "国网多芯系统SMIOS（RK3562J）/调试日志/OOT-KO-OOPS-CASES.md",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架详解.md",
     "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架详解.md",
     "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架移植.md",
     "国网多芯系统SMIOS（RK3562J）/杂项测试.md",
-    "国网多芯系统SMIOS（RK3562J）/调试日志/OOPS和PANIC排查.md",
     "TODO.md",
     "国网多芯系统SMIOS（RK3562J）/调试日志",
     "国网多芯系统SMIOS（RK3562J）/Linux框架/Media摄像头.md",
