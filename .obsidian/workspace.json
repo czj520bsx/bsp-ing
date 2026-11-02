@@ -4,53 +4,24 @@
     "type": "split",
     "children": [
       {
-        "id": "38fae0c8548867a4",
+        "id": "a5da96cd5d7ab946",
         "type": "tabs",
         "children": [
           {
-            "id": "5d80b321239c8dbc",
+            "id": "688f3a0b6fb3c830",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "国网多芯系统SMIOS（RK3562J）/Linux框架/Media摄像头.md",
+                "file": "cangjia-698-报文分类摘录.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Media摄像头"
-            }
-          },
-          {
-            "id": "37d561afa39c33ae",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架移植.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "drm框架移植"
-            }
-          },
-          {
-            "id": "7e1aaf7553047edf",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "国网多芯系统SMIOS（RK3562J）/移植多媒体总览.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "移植多媒体总览"
+              "title": "cangjia-698-报文分类摘录"
             }
           }
-        ],
-        "currentTab": 2
+        ]
       }
     ],
     "direction": "vertical"
@@ -214,18 +185,24 @@
       "bases:新建数据库": false
     }
   },
-  "active": "7e1aaf7553047edf",
+  "active": "688f3a0b6fb3c830",
   "lastOpenFiles": [
-    "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架移植.md",
+    "国网多芯系统SMIOS（RK3562J）/杂项测试.md",
+    "698报文.md",
+    "功控逻辑-时间与越限倒计时.md",
+    "Pasted image 20261021140422.png",
+    "cangjia-698-报文分类摘录.md",
     "国网多芯系统SMIOS（RK3562J）/移植多媒体总览.md",
+    "科旭",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架移植.md",
+    "file:E:/笔记/cangjia-698-报文分类摘录.md",
+    "功控逻辑-时间与越限倒计时 1.md",
+    "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架移植.md",
     "国网多芯系统SMIOS（RK3562J）/OOT-PORTING-GUIDE.md",
     "国网多芯系统SMIOS（RK3562J）/调试日志/OOPS和PANIC排查.md",
     "国网多芯系统SMIOS（RK3562J）/调试日志/OOT-KO-OOPS-CASES.md",
     "国网多芯系统SMIOS（RK3562J）/Linux框架/ALSA框架详解.md",
     "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架详解.md",
-    "国网多芯系统SMIOS（RK3562J）/Linux框架/drm框架移植.md",
-    "国网多芯系统SMIOS（RK3562J）/杂项测试.md",
-    "TODO.md",
     "国网多芯系统SMIOS（RK3562J）/调试日志",
     "国网多芯系统SMIOS（RK3562J）/Linux框架/Media摄像头.md",
     "国网多芯系统SMIOS（RK3562J）/Linux框架",
